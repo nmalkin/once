@@ -1,0 +1,62 @@
+#!/bin/bash
+
+#########################################################
+# ONCE - ensures given commands are running one at a time
+#########################################################
+# This script ensures the command passed to it as an argument is only running
+# once. It does this by creating a lock file before the command is run and
+# deleting it afterwards. To provide for commands dying, lock files expire
+# after 3 hours.
+
+LOCKDIR=~/tmp/locks
+mkdir -p $LOCKDIR 
+
+COMMAND="$*"
+OS_NAME=`uname`
+if [ $OS_NAME == "Darwin" ]; then
+  HASH=$(md5 -qs "$COMMAND";) # This only works on OS X.
+elif [ $OS_NAME == "Linux" ]; then
+  HASH=$(echo "$COMMAND" | md5sum | cut -d ' ' -f 1;) # This only works on Linux.
+else
+  echo "Unknown operating system: $OS_NAME (expected Darwin or Linux)"
+  exit 1
+fi
+
+LOCK=$LOCKDIR/$HASH
+
+function lock {
+    mkdir $LOCK
+}
+
+function unlock {
+    rmdir $LOCK
+}
+
+function quit {
+    echo "Command already running, won't launch it again: \"$COMMAND\""
+    exit 1
+}
+
+lock
+RESULT=$?
+if [ $RESULT -ne 0 ]
+then # lock exists
+    if test ! `find "$LOCK" -type d -mmin +180`
+    then # lock exists and is current
+        quit
+    else # lock expired
+        unlock
+        lock
+        # make sure we actually got the lock
+        RESULT=$?
+        if [ $RESULT -ne 0 ]
+        then
+            quit
+        fi
+    fi
+fi
+
+$COMMAND
+RESULT=$?
+unlock
+exit $RESULT
