@@ -14,12 +14,12 @@ mkdir -p $LOCKDIR
 COMMAND="$*"
 OS_NAME=`uname`
 if [ $OS_NAME == "Darwin" ]; then
-  HASH=$(md5 -qs "$COMMAND";) # This only works on OS X.
+    HASH=$(md5 -qs "$COMMAND";) # This only works on OS X.
 elif [ $OS_NAME == "Linux" ]; then
-  HASH=$(echo "$COMMAND" | md5sum | cut -d ' ' -f 1;) # This only works on Linux.
+    HASH=$(echo "$COMMAND" | md5sum | cut -d ' ' -f 1;) # This only works on Linux.
 else
-  echo "Unknown operating system: $OS_NAME (expected Darwin or Linux)"
-  exit 1
+   echo "Unknown operating system: $OS_NAME (expected Darwin or Linux)"
+   exit 1
 fi
 
 LOCK=$LOCKDIR/$HASH
